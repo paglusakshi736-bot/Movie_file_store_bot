@@ -1,114 +1,74 @@
-const TelegramBot = require('node-telegram-bot-api');
-const http = require('http');
+const express = require('express');
+const cors = require('cors');
+const mongoose = require('mongoose');
+const axios = require('axios');
+const path = require('path');
 
-const port = process.env.PORT || 3000;
-const ADMIN_ID = 7351417552;
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
-const token = process.env.BOT_TOKEN;
-if (!token) {
-  console.error("Error: BOT_TOKEN Environment Variable is missing!");
-  process.exit(1);
-}
+const PORT = process.env.PORT || 10000;
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const MONGO_URI = process.env.DATABASE_URI;
 
-const bot = new TelegramBot(token, { polling: true });
-const fileStore = {};
+mongoose.connect(MONGO_URI)
+  .then(() => console.log('MongoDB Connected Successfully'))
+  .catch(err => console.error('MongoDB Connection Error:', err));
 
-let BOT_USERNAME = "";
-bot.getMe().then((me) => {
-  BOT_USERNAME = me.username;
+const movieSchema = new mongoose.Schema({
+  title: String,
+  file_id: String,
+  file_size: String,
+  caption: String,
+  photo_file_id: String, 
 });
 
-const MINI_APP_URL = "https://gleaming-hamster-2e0b5e.netlify.app";
+const Movie = mongoose.model('Movie', movieSchema);
 
-http.createServer((req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    res.writeHead(200);
-    res.end();
-    return;
+// API 1: Fetch single movie details
+app.get('/api/movie/:id', async (req, res) => {
+  try {
+    const movie = await Movie.findById(req.params.id);
+    if (!movie) return res.status(404).json({ error: 'Movie not found' });
+    res.json(movie);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
   }
-
-  if (req.url === '/api/movies') {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    const moviesList = Object.keys(fileStore).map(key => ({
-      id: key,
-      title: fileStore[key].caption || "Untitled Movie",
-      poster: fileStore[key].poster || "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?q=80&w=300&auto=format&fit=crop"
-    }));
-    res.end(JSON.stringify(moviesList));
-  } else {
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('Bot Server is Running!');
-  }
-}).listen(port, () => {
-  console.log('Server is listening on port ' + port);
 });
 
-function sendStoredFile(chatId, fileKey) {
-  if (fileStore[fileKey]) {
-    const storedFile = fileStore[fileKey];
-    bot.sendMessage(chatId, "🎉 File unlocked successfully!\n\nTitle: " + storedFile.caption);
+// API 2: Fetch all movies for full library
+app.get('/api/movies', async (req, res) => {
+  try {
+    const movies = await Movie.find({});
+    res.json(movies);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// API 3: Poster image proxy from Telegram
+app.get('/poster/:file_id', async (req, res) => {
+  try {
+    const fileId = req.params.file_id;
+    const fileRes = await axios.get(https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${fileId});
+    const filePath = fileRes.data.result.file_path;
     
-    if (storedFile.type === 'video') {
-      bot.sendVideo(chatId, storedFile.id);
-    } else if (storedFile.type === 'document') {
-      bot.sendDocument(chatId, storedFile.id);
-    }
-  } else {
-    bot.sendMessage(chatId, "❌ File expired or server restarted.");
-  }
-}
+    const imageStream = await axios({
+      url: https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath},
+      method: 'GET',
+      responseType: 'stream'
+    });
 
-bot.onText(/\/start (.+)/, (msg, match) => {
-  sendStoredFile(msg.chat.id, match[1]);
+    res.setHeader('Content-Type', 'image/jpeg');
+    imageStream.data.pipe(res);
+  } catch (err) {
+    console.error('Poster proxy error:', err.message);
+    res.redirect('https://via.placeholder.com/300x450?text=No+Poster+Available');
+  }
 });
 
-bot.onText(/\/start$/, (msg) => {
-  const libraryUrl = MINI_APP_URL + "/?bot=" + BOT_USERNAME;
-  const options = {
-    reply_markup: {
-      inline_keyboard: [
-        [ { text: "🎬 Open Movie Library", web_app: { url: libraryUrl } } ]
-      ]
-    }
-  };
-  bot.sendMessage(msg.chat.id, "Welcome to Movie Hub! Click below to browse movies:", options);
-});
-
-bot.on('message', async (msg) => {
-  if (msg.text && msg.text.startsWith('/start')) return;
-
-  if (msg.from.id !== ADMIN_ID) {
-    if (msg.video || msg.document) {
-      bot.sendMessage(msg.chat.id, "❌ Only Admin can upload files.");
-    }
-    return;
-  }
-
-  let fileId = msg.video ? msg.video.file_id : (msg.document ? msg.document.file_id : null);
-  let fileType = msg.video ? 'video' : 'document';
-  let caption = msg.caption || 'Movie File';
-  let thumbId = (msg.video && msg.video.thumbnail) ? msg.video.thumbnail.file_id : null;
-
-  if (fileId) {
-    const uniqueKey = 'file_' + Date.now();
-    let posterLink = "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?q=80&w=300&auto=format&fit=crop";
-
-    if (thumbId) {
-      try { posterLink = await bot.getFileLink(thumbId); } catch (e) {}
-    }
-
-    fileStore[uniqueKey] = { id: fileId, type: fileType, caption: caption, poster: posterLink };
-
-    const webAppUrl = MINI_APP_URL + "/?start=" + uniqueKey + "&bot=" + BOT_USERNAME + "&title=" + encodeURIComponent(caption) + "&poster=" + encodeURIComponent(posterLink);
-    const options = {
-      reply_markup: {
-        inline_keyboard: [ [ { text: "🎬 View Movie", web_app: { url: webAppUrl } } ] ]
-      }
-    };
-    bot.sendMessage(msg.chat.id, "✅ *File Added to Library!*", { parse_mode: 'Markdown', ...options });
-  }
+app.listen(PORT, () => {
+  console.log(Server is running on port ${PORT});
 });
