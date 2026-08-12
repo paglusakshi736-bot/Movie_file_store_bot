@@ -1,4 +1,4 @@
-  const TelegramBot = require('node-telegram-bot-api');
+const TelegramBot = require('node-telegram-bot-api');
 const http = require('http');
 
 // Render Port Fix
@@ -87,8 +87,8 @@ bot.on('message', (msg) => {
     const uniqueKey = 'file_' + Date.now();
     fileStore[uniqueKey] = { id: fileId, type: fileType, caption: caption };
 
-    const webAppUrl1 = ${MINI_APP_URL}/?start=${uniqueKey}&ads=1;
-    const webAppUrl3 = ${MINI_APP_URL}/?start=${uniqueKey}&ads=3;
+    const webAppUrl1 = MINI_APP_URL + "/?start=" + uniqueKey + "&ads=1";
+    const webAppUrl3 = MINI_APP_URL + "/?start=" + uniqueKey + "&ads=3";
 
     // Telegram Inline WebApp Buttons
     const options = {
@@ -104,7 +104,7 @@ bot.on('message', (msg) => {
       }
     };
 
-    bot.sendMessage(chatId, "✅ *File Saved Successfully!*\nClick the button below to open the Mini App:", { parse_mode: 'Markdown', ...options });
+    bot.sendMessage(chatId, "✅ *File Saved Successfully!*\nClick below to open the Mini App:", { parse_mode: 'Markdown', ...options });
   }
 });
 
