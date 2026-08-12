@@ -2,7 +2,7 @@ const TelegramBot = require('node-telegram-bot-api');
 
 const token = process.env.BOT_TOKEN;
 if (!token) {
-  console.error("Error: BOT_TOKEN Environment Variable missing!");
+  console.error("Error: BOT_TOKEN missing!");
   process.exit(1);
 }
 
@@ -15,7 +15,8 @@ bot.onText(/\/start (.+)/, (msg, match) => {
 
   if (fileStore[fileId]) {
     const storedFile = fileStore[fileId];
-    bot.sendMessage(chatId, Your Movie File is ready!\n\nTitle: ${storedFile.caption || 'Movie File'});
+    const captionText = storedFile.caption ? storedFile.caption : 'Movie File';
+    bot.sendMessage(chatId, "Your Movie File is ready!\n\nTitle: " + captionText);
     
     if (storedFile.type === 'video') {
       bot.sendVideo(chatId, storedFile.id);
@@ -53,8 +54,8 @@ bot.on('message', (msg) => {
     fileStore[uniqueKey] = { id: fileId, type: fileType, caption: caption };
 
     bot.getMe().then((me) => {
-      const shareableLink = https://t.me/${me.username}?start=${uniqueKey};
-      bot.sendMessage(chatId, File Saved Successfully!\n\nMovie Link:\n${shareableLink});
+      const shareableLink = "https://t.me/" + me.username + "?start=" + uniqueKey;
+      bot.sendMessage(chatId, "File Saved Successfully!\n\nMovie Link:\n" + shareableLink);
     });
   }
 });
