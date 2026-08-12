@@ -38,6 +38,9 @@
       cursor: pointer;
       margin-bottom: 12px;
       transition: all 0.3s ease;
+      display: block;
+      text-decoration: none;
+      box-sizing: border-box;
     }
     .btn-ad { background-color: #3b82f6; color: white; }
     .btn-unlock {
@@ -45,12 +48,14 @@
       color: #000000;
       cursor: not-allowed;
       opacity: 0.5;
+      pointer-events: none;
     }
     .btn-unlock.active {
       background-color: #22c55e;
       color: white;
       cursor: pointer;
       opacity: 1;
+      pointer-events: auto;
     }
   </style>
 </head>
@@ -61,7 +66,7 @@
     <p>Watch ad step(s) below to unlock your movie file.</p>
 
     <button id="adBtn" class="btn btn-ad" onclick="watchAd()">📺 Watch Ad to Unlock</button>
-    <button id="unlockBtn" class="btn btn-unlock" disabled onclick="sendDataBack()">🔑 Get Movie File</button>
+    <a id="unlockBtn" class="btn btn-unlock" href="#">🔑 Get Movie File</a>
   </div>
 
   <script>
@@ -71,7 +76,9 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const fileKey = urlParams.get('start') || '';
+    const botUsername = urlParams.get('bot') || '';
     
+    // Ad Link
     const adUrl = "https://www.google.com"; 
 
     function watchAd() {
@@ -84,17 +91,11 @@
       adBtn.style.backgroundColor = "#10b981";
       adBtn.disabled = true;
 
-      unlockBtn.disabled = false;
-      unlockBtn.classList.add('active');
-    }
-
-    function sendDataBack() {
-      if (fileKey) {
-        tg.sendData(fileKey);
-        tg.close(); // Send Data करने के बाद Mini App को ऑटो-क्लोज करना
-      } else {
-        alert("File key missing!");
+      // Unlock button activate करना और Bot का Direct start link सेट करना
+      if (botUsername && fileKey) {
+        unlockBtn.href = "https://t.me/" + botUsername + "?start=" + fileKey;
       }
+      unlockBtn.classList.add('active');
     }
   </script>
 </body>
