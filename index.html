@@ -1,84 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Movie Unlocker Mini App</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    body {
-      background-color: #0f172a;
-      color: #ffffff;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      margin: 0;
-      padding: 15px;
+if (fileKey) {
+      document.getElementById('movieTitle').innerText = title;
+      document.getElementById('moviePoster').src = poster;
+    } else {
+      showLibrary();
     }
-    .card {
-      background-color: #1e293b;
-      border-radius: 16px;
-      padding: 24px;
-      width: 100%;
-      max-width: 380px;
-      text-align: center;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-    }
-    h2 { margin-top: 0; color: #38bdf8; }
-    p { color: #94a3b8; font-size: 14px; margin-bottom: 20px; }
-    .btn {
-      width: 100%;
-      padding: 14px;
-      border: none;
-      border-radius: 10px;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-      margin-bottom: 12px;
-      transition: all 0.3s ease;
-      display: block;
-      text-decoration: none;
-      box-sizing: border-box;
-    }
-    .btn-ad { background-color: #3b82f6; color: white; }
-    .btn-unlock {
-      background-color: #eab308;
-      color: #000000;
-      cursor: not-allowed;
-      opacity: 0.5;
-      pointer-events: none;
-    }
-    .btn-unlock.active {
-      background-color: #22c55e;
-      color: white;
-      cursor: pointer;
-      opacity: 1;
-      pointer-events: auto;
-    }
-  </style>
-</head>
-<body>
 
-  <div class="card">
-    <h2>🔒 Link Locked</h2>
-    <p>Watch ad step(s) below to unlock your movie file.</p>
-
-    <button id="adBtn" class="btn btn-ad" onclick="watchAd()">📺 Watch Ad to Unlock</button>
-    <a id="unlockBtn" class="btn btn-unlock" href="#">🔑 Get Movie File</a>
-  </div>
-
-  <script>
-    const tg = window.Telegram.WebApp;
-    tg.ready();
-    tg.expand();
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const fileKey = urlParams.get('start') || '';
-    const botUsername = urlParams.get('bot') || '';
-    
-    // Ad Link
     const adUrl = "https://www.google.com"; 
 
     function watchAd() {
@@ -91,11 +17,56 @@
       adBtn.style.backgroundColor = "#10b981";
       adBtn.disabled = true;
 
-      // Unlock button activate करना और Bot का Direct start link सेट करना
       if (botUsername && fileKey) {
-        unlockBtn.href = "https://t.me/" + botUsername + "?start=" + fileKey;
+        unlockBtn.href = https://t.me/${botUsername}?start=${fileKey};
       }
       unlockBtn.classList.add('active');
+    }
+
+    function closeApp() {
+      setTimeout(() => { tg.close(); }, 1000);
+    }
+
+    async function showLibrary() {
+      document.getElementById('unlockView').classList.add('hidden');
+      document.getElementById('libraryView').classList.remove('hidden');
+      document.getElementById('appTitle').innerText = "Movie Library";
+
+      try {
+        const res = await fetch(${BOT_URL}/api/movies);
+        allMovies = await res.json();
+        renderMovies(allMovies);
+      } catch (e) {
+        document.getElementById('movieList').innerHTML = "<p style='color:#ef4444; text-align:center;'>Failed to load library.</p>";
+      }
+    }
+
+    function renderMovies(movies) {
+      const container = document.getElementById('movieList');
+      if (movies.length === 0) {
+        container.innerHTML = "<p style='text-align:center;'>No movies found.</p>";
+        return;
+      }
+
+      container.innerHTML = movies.map(m => 
+        <div class="movie-item" onclick="openMovie('${m.id}', '${encodeURIComponent(m.title)}', '${encodeURIComponent(m.poster)}')">
+          <img src="${m.poster}" alt="thumb">
+          <div>
+            <div style="font-weight:bold; font-size:14px;">${m.title}</div>
+            <div style="font-size:11px; color:#94a3b8;">Click to unlock</div>
+          </div>
+        </div>
+      ).join('');
+    }
+
+    function filterMovies() {
+      const q = document.getElementById('searchBar').value.toLowerCase();
+      const filtered = allMovies.filter(m => m.title.toLowerCase().includes(q));
+      renderMovies(filtered);
+    }
+
+    function openMovie(key, encTitle, encPoster) {
+      window.location.href = /?start=${key}&bot=${botUsername || 'your_bot'}&title=${encTitle}&poster=${encPoster};
     }
   </script>
 </body>
