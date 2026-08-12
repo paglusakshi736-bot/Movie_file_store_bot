@@ -22,7 +22,14 @@ const MINI_APP_URL = "https://gleaming-hamster-2e0b5e.netlify.app";
 
 http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(200);
+    res.end();
+    return;
+  }
 
   if (req.url === '/api/movies') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -34,7 +41,7 @@ http.createServer((req, res) => {
     res.end(JSON.stringify(moviesList));
   } else {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('Bot Server is Running Successfully!');
+    res.end('Bot Server is Running!');
   }
 }).listen(port, () => {
   console.log('Server is listening on port ' + port);
@@ -43,8 +50,7 @@ http.createServer((req, res) => {
 function sendStoredFile(chatId, fileKey) {
   if (fileStore[fileKey]) {
     const storedFile = fileStore[fileKey];
-    const captionText = storedFile.caption ? storedFile.caption : 'Movie File';
-    bot.sendMessage(chatId, "🎉 Your Movie File is unlocked!\n\nTitle: " + captionText);
+    bot.sendMessage(chatId, "🎉 File unlocked successfully!\n\nTitle: " + storedFile.caption);
     
     if (storedFile.type === 'video') {
       bot.sendVideo(chatId, storedFile.id);
@@ -61,65 +67,48 @@ bot.onText(/\/start (.+)/, (msg, match) => {
 });
 
 bot.onText(/\/start$/, (msg) => {
-  bot.sendMessage(msg.chat.id, "Welcome! Send me a video file to generate an Ad-locked link.");
+  const libraryUrl = MINI_APP_URL + "/?bot=" + BOT_USERNAME;
+  const options = {
+    reply_markup: {
+      inline_keyboard: [
+        [ { text: "🎬 Open Movie Library", web_app: { url: libraryUrl } } ]
+      ]
+    }
+  };
+  bot.sendMessage(msg.chat.id, "Welcome to Movie Hub! Click below to browse movies:", options);
 });
 
 bot.on('message', async (msg) => {
-  const chatId = msg.chat.id;
-
   if (msg.text && msg.text.startsWith('/start')) return;
 
   if (msg.from.id !== ADMIN_ID) {
     if (msg.video || msg.document) {
-      bot.sendMessage(chatId, "❌ Only Admin has permission to upload.");
+      bot.sendMessage(msg.chat.id, "❌ Only Admin can upload files.");
     }
     return;
   }
 
-  let fileId = null;
-  let fileType = null;
+  let fileId = msg.video ? msg.video.file_id : (msg.document ? msg.document.file_id : null);
+  let fileType = msg.video ? 'video' : 'document';
   let caption = msg.caption || 'Movie File';
-  let thumbId = null;
-
-  if (msg.video) {
-    fileId = msg.video.file_id;
-    fileType = 'video';
-    if (msg.video.thumbnail) thumbId = msg.video.thumbnail.file_id;
-  } else if (msg.document) {
-    fileId = msg.document.file_id;
-    fileType = 'document';
-    if (msg.document.thumbnail) thumbId = msg.document.thumbnail.file_id;
-  }
+  let thumbId = (msg.video && msg.video.thumbnail) ? msg.video.thumbnail.file_id : null;
 
   if (fileId) {
     const uniqueKey = 'file_' + Date.now();
     let posterLink = "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?q=80&w=300&auto=format&fit=crop";
 
     if (thumbId) {
-      try {
-        posterLink = await bot.getFileLink(thumbId);
-      } catch (e) {
-        console.log("Could not fetch thumbnail.");
-      }
+      try { posterLink = await bot.getFileLink(thumbId); } catch (e) {}
     }
 
     fileStore[uniqueKey] = { id: fileId, type: fileType, caption: caption, poster: posterLink };
 
-    const encodedTitle = encodeURIComponent(caption);
-    const encodedPoster = encodeURIComponent(posterLink);
-
-    const webAppUrl = MINI_APP_URL + "/?start=" + uniqueKey + "&bot=" + BOT_USERNAME + "&title=" + encodedTitle + "&poster=" + encodedPoster;
-
+    const webAppUrl = MINI_APP_URL + "/?start=" + uniqueKey + "&bot=" + BOT_USERNAME + "&title=" + encodeURIComponent(caption) + "&poster=" + encodeURIComponent(posterLink);
     const options = {
       reply_markup: {
-        inline_keyboard: [
-          [ { text: "🎬 View Movie in Mini App", web_app: { url: webAppUrl } } ]
-        ]
+        inline_keyboard: [ [ { text: "🎬 View Movie", web_app: { url: webAppUrl } } ] ]
       }
     };
-
-    bot.sendMessage(chatId, "✅ *File Saved to Library!*", { parse_mode: 'Markdown', ...options });
+    bot.sendMessage(msg.chat.id, "✅ *File Added to Library!*", { parse_mode: 'Markdown', ...options });
   }
 });
-
-console.log("Movie Store Bot running live...");
