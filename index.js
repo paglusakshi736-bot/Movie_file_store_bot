@@ -108,7 +108,7 @@ bot.on('message', async (msg) => {
     const encodedTitle = encodeURIComponent(caption);
     const encodedPoster = encodeURIComponent(posterLink);
 
-    const webAppUrl = ${MINI_APP_URL}/?start=${uniqueKey}&bot=${BOT_USERNAME}&title=${encodedTitle}&poster=${encodedPoster};
+    const webAppUrl = MINI_APP_URL + "/?start=" + uniqueKey + "&bot=" + BOT_USERNAME + "&title=" + encodedTitle + "&poster=" + encodedPoster;
 
     const options = {
       reply_markup: {
