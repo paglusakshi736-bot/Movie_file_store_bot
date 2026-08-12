@@ -26,15 +26,8 @@
       text-align: center;
       box-shadow: 0 10px 25px rgba(0,0,0,0.5);
     }
-    h2 {
-      margin-top: 0;
-      color: #38bdf8;
-    }
-    p {
-      color: #94a3b8;
-      font-size: 14px;
-      margin-bottom: 20px;
-    }
+    h2 { margin-top: 0; color: #38bdf8; }
+    p { color: #94a3b8; font-size: 14px; margin-bottom: 20px; }
     .btn {
       width: 100%;
       padding: 14px;
@@ -46,13 +39,7 @@
       margin-bottom: 12px;
       transition: all 0.3s ease;
     }
-    .btn-ad {
-      background-color: #3b82f6;
-      color: white;
-    }
-    .btn-ad:hover {
-      background-color: #2563eb;
-    }
+    .btn-ad { background-color: #3b82f6; color: white; }
     .btn-unlock {
       background-color: #eab308;
       color: #000000;
@@ -73,28 +60,23 @@
     <h2>🔒 Link Locked</h2>
     <p>Watch ad step(s) below to unlock your movie file.</p>
 
-    <!-- Ad Button -->
     <button id="adBtn" class="btn btn-ad" onclick="watchAd()">📺 Watch Ad to Unlock</button>
-
-    <!-- Unlock Button -->
     <button id="unlockBtn" class="btn btn-unlock" disabled onclick="sendDataBack()">🔑 Get Movie File</button>
   </div>
 
   <script>
     const tg = window.Telegram.WebApp;
+    tg.ready();
     tg.expand();
 
     const urlParams = new URLSearchParams(window.location.search);
     const fileKey = urlParams.get('start') || '';
     
-    // Ad URL (बाद में Monetag/Adsterra direct link यहाँ बदलें)
     const adUrl = "https://www.google.com"; 
 
     function watchAd() {
-      // Ad window खोलें
       window.open(adUrl, '_blank');
 
-      // Ad देखने के बाद बटन Active करें
       const adBtn = document.getElementById('adBtn');
       const unlockBtn = document.getElementById('unlockBtn');
 
@@ -109,6 +91,7 @@
     function sendDataBack() {
       if (fileKey) {
         tg.sendData(fileKey);
+        tg.close(); // Send Data करने के बाद Mini App को ऑटो-क्लोज करना
       } else {
         alert("File key missing!");
       }
