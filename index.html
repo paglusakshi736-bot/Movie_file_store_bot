@@ -2,221 +2,98 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Movie Library & Unlocker</title>
+  <title>Movie Library</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    body {
-      background-color: #0f172a;
-      color: #ffffff;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      margin: 0;
-      padding: 15px;
-      display: flex;
-      justify-content: center;
-    }
-    .card {
-      background-color: #1e293b;
-      border-radius: 16px;
-      padding: 20px;
-      width: 100%;
-      max-width: 400px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-    }
-    .header-box {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 15px;
-    }
-    .app-logo {
-      width: 38px;
-      height: 38px;
-      border-radius: 8px;
-    }
+    body { background-color: #0f172a; color: #fff; font-family: sans-serif; margin: 0; padding: 15px; display: flex; justify-content: center; }
+    .card { background-color: #1e293b; border-radius: 16px; padding: 20px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+    .header-box { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; }
+    .app-logo { width: 38px; height: 38px; border-radius: 8px; }
     h2 { margin: 0; color: #38bdf8; font-size: 20px; }
-    p { color: #94a3b8; font-size: 14px; }
-    
-    .search-input {
-      width: 100%;
-      padding: 12px;
-      border-radius: 10px;
-      border: 1px solid #334155;
-      background-color: #0f172a;
-      color: #fff;
-      font-size: 14px;
-      margin-bottom: 15px;
-      box-sizing: border-box;
-    }
-    
-    .poster {
-      width: 100%;
-      height: 260px;
-      object-fit: cover;
-      border-radius: 12px;
-      margin-bottom: 12px;
-    }
-
-    .btn {
-      width: 100%;
-      padding: 14px;
-      border: none;
-      border-radius: 10px;
-      font-size: 15px;
-      font-weight: bold;
-      cursor: pointer;
-      margin-bottom: 10px;
-      transition: all 0.3s ease;
-      display: block;
-      text-decoration: none;
-      text-align: center;
-      box-sizing: border-box;
-    }
+    .search-input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: #fff; margin-bottom: 15px; box-sizing: border-box; }
+    .poster { width: 100%; height: 260px; object-fit: cover; border-radius: 12px; margin-bottom: 12px; }
+    .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-bottom: 10px; display: block; text-decoration: none; text-align: center; }
     .btn-ad { background-color: #3b82f6; color: white; }
-    .btn-unlock {
-      background-color: #eab308;
-      color: #000;
-      opacity: 0.5;
-      pointer-events: none;
-    }
-    .btn-unlock.active {
-      background-color: #22c55e;
-      color: white;
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .movie-item {
-      background: #0f172a;
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 8px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .movie-item img {
-      width: 40px;
-      height: 40px;
-      border-radius: 6px;
-      object-fit: cover;
-    }
+    .btn-unlock { background-color: #eab308; color: #000; opacity: 0.5; pointer-events: none; }
+    .btn-unlock.active { background-color: #22c55e; color: white; opacity: 1; pointer-events: auto; }
+    .movie-item { background: #0f172a; padding: 12px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+    .movie-item img { width: 45px; height: 45px; border-radius: 6px; object-fit: cover; }
     .hidden { display: none; }
   </style>
 </head>
 <body>
-
   <div class="card">
     <div class="header-box">
-      <img src="https://cdn-icons-png.flaticon.com/512/3163/3163478.png" class="app-logo" alt="Logo">
+      <img src="https://cdn-icons-png.flaticon.com/512/3163/3163478.png" class="app-logo">
       <h2 id="appTitle">Movie Hub</h2>
     </div>
 
     <div id="unlockView">
-      <img id="moviePoster" class="poster" src="" alt="Poster">
-      <h3 id="movieTitle" style="margin-top:0; color:#f8fafc;">Movie Title</h3>
-      <p>Watch ad below to unlock full movie file.</p>
-
+      <img id="moviePoster" class="poster" src="">
+      <h3 id="movieTitle" style="color:#f8fafc;"></h3>
       <button id="adBtn" class="btn btn-ad" onclick="watchAd()">📺 Watch Ad to Unlock</button>
-      <a id="unlockBtn" class="btn btn-unlock" href="#" onclick="closeApp()">🔑 Get Movie File</a>
-      
-      <button class="btn" style="background:#334155; color:#fff; margin-top:10px;" onclick="showLibrary()">📚 View Full Library</button>
+      <a id="unlockBtn" class="btn btn-unlock" href="#" onclick="setTimeout(()=>{tg.close()}, 1000)">🔑 Get Movie File</a>
+      <button class="btn" style="background:#334155;" onclick="showLibrary()">📚 View Full Library</button>
     </div>
 
     <div id="libraryView" class="hidden">
       <input type="text" id="searchBar" class="search-input" placeholder="🔍 Search movies..." onkeyup="filterMovies()">
-      <div id="movieList">
-        <p style="text-align:center;">Loading Library...</p>
-      </div>
+      <div id="movieList"><p style="text-align:center;">Loading Library...</p></div>
+      <button class="btn" style="background:#334155;" onclick="showUnlockView()">⬅ Back</button>
     </div>
-
   </div>
 
   <script>
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
+    
+    // आपका असली Render URL यहाँ सेट कर दिया गया है
+    const RENDER_BOT_URL = "https://movie-file-store-bot-13yh.onrender.com";
 
     const params = new URLSearchParams(window.location.search);
-    const fileKey = params.get('start');
-    const botUsername = params.get('bot');
-    const title = params.get('title') ? decodeURIComponent(params.get('title')) : "Movie File";
-    const poster = params.get('poster') ? decodeURIComponent(params.get('poster')) : "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?q=80&w=300&auto=format&fit=crop";
-
-    let allMovies = [];
-    if (fileKey) {
-      document.getElementById('movieTitle').innerText = title;
-      document.getElementById('moviePoster').src = poster;
+    if (params.get('start')) {
+      document.getElementById('movieTitle').innerText = decodeURIComponent(params.get('title') || "Movie File");
+      document.getElementById('moviePoster').src = decodeURIComponent(params.get('poster') || "");
     } else {
       showLibrary();
     }
 
-    const adUrl = "https://www.google.com"; 
-
     function watchAd() {
-      window.open(adUrl, '_blank');
-
-      const adBtn = document.getElementById('adBtn');
-      const unlockBtn = document.getElementById('unlockBtn');
-
-      adBtn.innerText = "✅ Ad Completed";
-      adBtn.style.backgroundColor = "#10b981";
-      adBtn.disabled = true;
-
-      if (botUsername && fileKey) {
-        unlockBtn.href = "https://t.me/" + botUsername + "?start=" + fileKey;
-      }
-      unlockBtn.classList.add('active');
+      window.open("https://www.google.com", '_blank');
+      document.getElementById('adBtn').innerText = "✅ Ad Completed";
+      document.getElementById('adBtn').style.backgroundColor = "#10b981";
+      document.getElementById('unlockBtn').href = "https://t.me/" + params.get('bot') + "?start=" + params.get('start');
+      document.getElementById('unlockBtn').classList.add('active');
     }
 
-    function closeApp() {
-      setTimeout(function() { tg.close(); }, 1000);
+    function showUnlockView() {
+      document.getElementById('libraryView').classList.add('hidden');
+      document.getElementById('unlockView').classList.remove('hidden');
+      document.getElementById('appTitle').innerText = "Movie Hub";
     }
-
     async function showLibrary() {
       document.getElementById('unlockView').classList.add('hidden');
       document.getElementById('libraryView').classList.remove('hidden');
       document.getElementById('appTitle').innerText = "Movie Library";
-
-      // Render URL automatically taken from page URL or default
-      const currentHost = window.location.protocol + "//" + window.location.host;
       try {
-        const res = await fetch("/api/movies");
-        allMovies = await res.json();
-        renderMovies(allMovies);
-      } catch (e) {
-        document.getElementById('movieList').innerHTML = "<p style='color:#ef4444; text-align:center;'>No movies in library yet. Upload a video in bot!</p>";
-      }
+        const res = await fetch(RENDER_BOT_URL + "/api/movies");
+        window.allMovies = await res.json();
+        render(window.allMovies);
+      } catch (e) { document.getElementById('movieList').innerHTML = "Failed to load library."; }
     }
 
-    function renderMovies(movies) {
-      const container = document.getElementById('movieList');
-      if (!movies || movies.length === 0) {
-        container.innerHTML = "<p style='text-align:center;'>No movies found.</p>";
-        return;
-      }
-
-      var html = "";
-      for (var i = 0; i < movies.length; i++) {
-        var m = movies[i];
-        html += '<div class="movie-item" onclick="openMovie(\'' + m.id + '\', \'' + encodeURIComponent(m.title) + '\', \'' + encodeURIComponent(m.poster) + '\')">';
-        html += '<img src="' + m.poster + '" alt="thumb">';
-        html += '<div><div style="font-weight:bold; font-size:14px;">' + m.title + '</div><div style="font-size:11px; color:#94a3b8;">Click to unlock</div></div>';
-        html += '</div>';
-      }
-      container.innerHTML = html;
+    function render(m) {
+      document.getElementById('movieList').innerHTML = m.map(x => 
+        <div class="movie-item" onclick="location.href='/?start=${x.id}&bot=${params.get('bot')}&title=${encodeURIComponent(x.title)}&poster=${encodeURIComponent(x.poster)}'">
+          <img src="${x.poster}"><div><b>${x.title}</b></div>
+        </div>).join('');
     }
 
     function filterMovies() {
       const q = document.getElementById('searchBar').value.toLowerCase();
-      const filtered = allMovies.filter(function(m) { return m.title.toLowerCase().indexOf(q) !== -1; });
-      renderMovies(filtered);
-    }
-
-    function openMovie(key, encTitle, encPoster) {
-      window.location.href = "/?start=" + key + "&bot=" + (botUsername || '') + "&title=" + encTitle + "&poster=" + encPoster;
+      render(allMovies.filter(x => x.title.toLowerCase().includes(q)));
     }
   </script>
 </body>
-</html>    
+</html>
