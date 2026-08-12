@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Movie Hub Mini App</title>
-  <!-- Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     * { box-sizing: border-box; }
@@ -58,7 +57,6 @@
     .btn-file:disabled { background-color: #475569; color: #94a3b8; cursor: not-allowed; }
     .btn-library { background-color: #334155; color: white; }
 
-    /* Library Screen CSS */
     .library-container {
       display: none;
       text-align: left;
@@ -85,7 +83,7 @@
 </head>
 <body>
 
-  <!-- Screen 1: Single Movie View -->
+  <!-- Single Movie View -->
   <div class="card" id="main-card">
     <div class="title" id="movie-title">🍿 Movie Hub</div>
     <img id="movie-poster" class="poster" src="https://via.placeholder.com/300x450?text=Loading+Poster..." alt="Movie Poster" />
@@ -95,11 +93,11 @@
     <button class="btn btn-library" onclick="showLibrary()">📚 View Full Library</button>
   </div>
 
-  <!-- Screen 2: All Movies Library View -->
+  <!-- Library View -->
   <div class="card library-container" id="library-card">
     <div class="title">📚 All Available Movies</div>
     <div class="movie-list" id="movies-list">Loading movies...</div>
-    <button class="btn btn-library" style="margin-top: 14px;" onclick="hideLibrary()">⬅️ Back to Single View</button>
+    <button class="btn btn-library" style="margin-top: 14px;" onclick="hideLibrary()">⬅️ Back to Movie</button>
   </div>
 
   <script>
@@ -112,7 +110,6 @@
 
     let isUnlocked = false;
 
-    // Movie data load karne ka function
     async function loadMovie() {
       if (!movieId) {
         showLibrary();
@@ -124,8 +121,9 @@
         const data = await res.json();
         
         document.getElementById('movie-title').innerText = data.title || 'Movie Hub';
-        if (data.poster_url) {
-          document.getElementById('movie-poster').src = data.poster_url;
+        
+        if (data.photo_file_id) {
+          document.getElementById('movie-poster').src = /poster/${data.photo_file_id};
         } else {
           document.getElementById('movie-poster').src = 'https://via.placeholder.com/300x450?text=No+Poster';
         }
@@ -134,7 +132,6 @@
         showLibrary();
       }
     }
-    // Unlock Button Function
     function unlockMovie() {
       isUnlocked = true;
       const getBtn = document.getElementById('get-file-btn');
@@ -143,10 +140,8 @@
       getBtn.disabled = false;
       unlockBtn.innerText = "✅ Unlocked!";
       unlockBtn.style.backgroundColor = "#16a34a";
-      alert("Movie Unlocked Successfully! Click 'Get Movie File'.");
     }
 
-    // Send File to Bot Function
     function getFile() {
       if (!isUnlocked) {
         alert("Please click 'Unlock Movie' first!");
@@ -156,7 +151,6 @@
       tg.close();
     }
 
-    // Show Library Function
     async function showLibrary() {
       document.getElementById('main-card').style.display = 'none';
       document.getElementById('library-card').style.display = 'block';
@@ -170,7 +164,7 @@
         listDiv.innerHTML = '';
         
         if (!movies || movies.length === 0) {
-          listDiv.innerHTML = '<div style="color:#aaa; text-align:center; padding: 20px;">No movies found in database.</div>';
+          listDiv.innerHTML = '<div style="color:#aaa; text-align:center; padding: 20px;">No movies found. Send files to bot!</div>';
           return;
         }
 
@@ -189,7 +183,6 @@
       }
     }
 
-    // Back from Library
     function hideLibrary() {
       document.getElementById('library-card').style.display = 'none';
       document.getElementById('main-card').style.display = 'block';
