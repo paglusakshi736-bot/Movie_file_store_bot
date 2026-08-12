@@ -41,12 +41,11 @@ const Movie = mongoose.model('Movie', movieSchema);
 // BOT HANDLERS
 if (bot) {
   bot.onText(/\/start/, (msg) => {
-    bot.sendMessage(msg.chat.id, "👋 पवन भाई आपका बॉट एक्टिव है! कोई भी मूवी, वीडियो या फ़ाइल भेजें, यह सीधे MongoDB में सेव हो जाएगी।");
+    bot.sendMessage(msg.chat.id, "Welcome! Send or forward any video, photo or document to save to MongoDB database.");
   });
 
   bot.on('message', async (msg) => {
-    // Check if message contains video, document, or photo
-    if (msg.video || msg.document || msg.photo) {
+    if (msg.video  msg.document  msg.photo) {
       try {
         let fileId = "";
         let photoFileId = "";
@@ -60,7 +59,6 @@ if (bot) {
           if (msg.document.thumbnail) photoFileId = msg.document.thumbnail.file_id;
           if (!msg.caption && msg.document.file_name) title = msg.document.file_name;
         } else if (msg.photo) {
-          // If user sends photo only
           fileId = msg.photo[msg.photo.length - 1].file_id;
           photoFileId = fileId;
         }
@@ -73,14 +71,13 @@ if (bot) {
         });
 
         await newMovie.save();
-        bot.sendMessage(msg.chat.id, ✅ Database में सेव हो गया!\n\n🎬 Title: ${title});
+        bot.sendMessage(msg.chat.id, "Saved to Database successfully! Title: " + title);
       } catch (err) {
         console.error('Error saving movie:', err);
-        bot.sendMessage(msg.chat.id, '❌ Save करने में एरर आया।');
+        bot.sendMessage(msg.chat.id, "Error saving file to database.");
       }
     }
 
-    // Handle Mini App Data Submission
     if (msg.web_app_data) {
       try {
         const data = JSON.parse(msg.web_app_data.data);
@@ -89,7 +86,7 @@ if (bot) {
           if (movie) {
             bot.sendDocument(msg.chat.id, movie.file_id, { caption: movie.caption || movie.title });
           } else {
-            bot.sendMessage(msg.chat.id, '❌ फ़ाइल डेटाबेस में नहीं मिली।');
+            bot.sendMessage(msg.chat.id, "File not found in database.");
           }
         }
       } catch (err) {
@@ -101,7 +98,6 @@ if (bot) {
 
 // EXPRESS APIs FOR MINI APP
 
-// API 1: Fetch single movie details
 app.get('/api/movie/:id', async (req, res) => {
   try {
     const movie = await Movie.findById(req.params.id);
@@ -112,7 +108,6 @@ app.get('/api/movie/:id', async (req, res) => {
   }
 });
 
-// API 2: Fetch all movies for library
 app.get('/api/movies', async (req, res) => {
   try {
     const movies = await Movie.find({});
@@ -122,13 +117,13 @@ app.get('/api/movies', async (req, res) => {
   }
 });
 
-// API 3: Poster image proxy (Serves Telegram Thumbnails)
 app.get('/poster/:file_id', async (req, res) => {
   try {
     const fileId = req.params.file_id;
     if (!fileId || fileId === 'undefined') {
       return res.redirect('https://via.placeholder.com/300x450?text=No+Poster');
     }
+
     const fileRes = await axios.get(https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${fileId});
     const filePath = fileRes.data.result.file_path;
     
@@ -137,7 +132,6 @@ app.get('/poster/:file_id', async (req, res) => {
       method: 'GET',
       responseType: 'stream'
     });
-
     res.setHeader('Content-Type', 'image/jpeg');
     imageStream.data.pipe(res);
   } catch (err) {
@@ -146,7 +140,6 @@ app.get('/poster/:file_id', async (req, res) => {
   }
 });
 
-// Fallback to Mini App
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
