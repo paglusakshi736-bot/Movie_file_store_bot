@@ -1,7 +1,7 @@
 const TelegramBot = require('node-telegram-bot-api');
 const http = require('http');
 
-// Render Port Issue Fix: Web Server to keep Render active
+// Render Port Fix
 const port = process.env.PORT || 3000;
 http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/plain' });
@@ -20,7 +20,10 @@ if (!token) {
 const bot = new TelegramBot(token, { polling: true });
 const fileStore = {};
 
-// Handle /start with File Key
+// Netlify Mini App URL
+const MINI_APP_URL = "https://gleaming-hamster-2e0b5e.netlify.app";
+
+// Start Command with File Key
 bot.onText(/\/start (.+)/, (msg, match) => {
   const chatId = msg.chat.id;
   const fileId = match[1];
@@ -28,7 +31,7 @@ bot.onText(/\/start (.+)/, (msg, match) => {
   if (fileStore[fileId]) {
     const storedFile = fileStore[fileId];
     const captionText = storedFile.caption ? storedFile.caption : 'Movie File';
-    bot.sendMessage(chatId, "Your Movie File is ready!\n\nTitle: " + captionText);
+    bot.sendMessage(chatId, "🎉 Your Movie File is unlocked!\n\nTitle: " + captionText);
     
     if (storedFile.type === 'video') {
       bot.sendVideo(chatId, storedFile.id);
@@ -40,16 +43,33 @@ bot.onText(/\/start (.+)/, (msg, match) => {
   }
 });
 
-// Handle simple /start
+// Normal /start
 bot.onText(/\/start$/, (msg) => {
-  bot.sendMessage(msg.chat.id, "Welcome! Use the Mini App to download movies.");
+  bot.sendMessage(msg.chat.id, "Welcome Pawan! Send me a video file to generate an Ad-locked link.");
 });
 
-// Store movie files sent by Admin
+// File Upload & WebApp Data Handling
 bot.on('message', (msg) => {
   const chatId = msg.chat.id;
 
   if (msg.text && msg.text.startsWith('/start')) return;
+
+  // Mini App से फाइल अनलॉक डेटा मिलना
+  if (msg.web_app_data) {
+    const fileKey = msg.web_app_data.data;
+    if (fileStore[fileKey]) {
+      const storedFile = fileStore[fileKey];
+      const captionText = storedFile.caption ? storedFile.caption : 'Movie File';
+      bot.sendMessage(chatId, "🎉 Here is your requested movie file!\n\nTitle: " + captionText);
+      
+      if (storedFile.type === 'video') {
+        bot.sendVideo(chatId, storedFile.id);
+      } else if (storedFile.type === 'document') {
+        bot.sendDocument(chatId, storedFile.id);
+      }
+    }
+    return;
+  }
 
   let fileId = null;
   let fileType = null;
@@ -67,10 +87,14 @@ bot.on('message', (msg) => {
     const uniqueKey = 'file_' + Date.now();
     fileStore[uniqueKey] = { id: fileId, type: fileType, caption: caption };
 
-    bot.getMe().then((me) => {
-      const shareableLink = "https://t.me/" + me.username + "?start=" + uniqueKey;
-      bot.sendMessage(chatId, "File Saved Successfully!\n\nMovie Link:\n" + shareableLink);
-    });
+    const shareLink1Ad = ${MINI_APP_URL}/?start=${uniqueKey}&ads=1;
+    const shareLink3Ads = ${MINI_APP_URL}/?start=${uniqueKey}&ads=3;
+
+    const responseMsg = ✅ *File Saved Successfully!*\n\n +
+      🔗 *1 Ad Link:*\n${shareLink1Ad}\n\n +
+      🔗 *3 Ads Link:*\n${shareLink3Ads};
+
+    bot.sendMessage(chatId, responseMsg, { parse_mode: 'Markdown' });
   }
 });
 
