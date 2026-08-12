@@ -1,42 +1,39 @@
 const TelegramBot = require('node-telegram-bot-api');
 
-// आपका बॉट टोकन
 const token = process.env.BOT_TOKEN;
-const bot = new TelegramBot(token, { polling: true });
+if (!token) {
+  console.error("Error: BOT_TOKEN Environment Variable missing!");
+  process.exit(1);
+}
 
-// फाइलों को सेव करने के लिए सिंपल इन-मेमोरी स्टोरेज
+const bot = new TelegramBot(token, { polling: true });
 const fileStore = {};
 
-// /start कमांड को हैंडल करना
 bot.onText(/\/start (.+)/, (msg, match) => {
   const chatId = msg.chat.id;
   const fileId = match[1];
 
   if (fileStore[fileId]) {
     const storedFile = fileStore[fileId];
-    bot.sendMessage(chatId, 🎬 **आपकी मूवी फाइल तैयार है!**\n\n📌 Title: ${storedFile.caption || 'Movie File'});
+    bot.sendMessage(chatId, Your Movie File is ready!\n\nTitle: ${storedFile.caption || 'Movie File'});
     
-    // फाइल टाइप के हिसाब से सेंड करना
     if (storedFile.type === 'video') {
       bot.sendVideo(chatId, storedFile.id);
     } else if (storedFile.type === 'document') {
       bot.sendDocument(chatId, storedFile.id);
     }
   } else {
-    bot.sendMessage(chatId, "❌ माफ कीजिए, यह फाइल या लिंक अमान्य (Expired) हो चुका है।");
+    bot.sendMessage(chatId, "File missing or expired.");
   }
 });
 
-// डिफ़ॉल्ट /start (बिना लिंक के)
 bot.onText(/\/start$/, (msg) => {
-  bot.sendMessage(msg.chat.id, "👋 आपका स्वागत है! मूवीज डाउनलोड करने के लिए मिनी ऐप का इस्तेमाल करें।");
+  bot.sendMessage(msg.chat.id, "Welcome! Use the Mini App to download movies.");
 });
 
-// एडमिन द्वारा भेजी गई मूवी फाइल को सेव करना
 bot.on('message', (msg) => {
   const chatId = msg.chat.id;
 
-  // केवल तब काम करे जब मैसेज /start न हो
   if (msg.text && msg.text.startsWith('/start')) return;
 
   let fileId = null;
@@ -55,13 +52,11 @@ bot.on('message', (msg) => {
     const uniqueKey = 'file_' + Date.now();
     fileStore[uniqueKey] = { id: fileId, type: fileType, caption: caption };
 
-    // बॉट का यूजरनेम निकाल कर डायरेक्ट लिंक बनाना
     bot.getMe().then((me) => {
       const shareableLink = https://t.me/${me.username}?start=${uniqueKey};
-      bot.sendMessage(chatId, ✅ **फाइल सफलतापूर्वक स्टोर हो गई है!**\n\n🔗 **यूनिक मूवी लिंक:**\n\${shareableLink}\\n\n*(इस लिंक को अपने मिनी ऐप के एडमिन पैनल में पेस्ट करें)*, { parse_mode: 'Markdown' });
+      bot.sendMessage(chatId, File Saved Successfully!\n\nMovie Link:\n${shareableLink});
     });
   }
 });
 
-console.log("File Store Bot 24/7 चालू है...");
-
+console.log("File Store Bot is running live...");
