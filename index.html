@@ -3,131 +3,116 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Movie File Unlocker</title>
+  <title>Movie Unlocker Mini App</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     body {
-      font-family: Arial, sans-serif;
       background-color: #0f172a;
       color: #ffffff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       display: flex;
-      flex-direction: column;
-      align-items: center;
       justify-content: center;
+      align-items: center;
       min-height: 100vh;
       margin: 0;
-      padding: 20px;
-      box-sizing: border-box;
+      padding: 15px;
     }
     .card {
-      background: #1e293b;
-      padding: 25px;
+      background-color: #1e293b;
       border-radius: 16px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      padding: 24px;
+      width: 100%;
+      max-width: 380px;
       text-align: center;
-      max-width: 400px;
-      width: 100%;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
     }
-    h2 { margin-bottom: 10px; color: #38bdf8; }
-    p { color: #94a3b8; font-size: 14px; margin-bottom: 20px; }
-    .ad-btn {
+    h2 {
+      margin-top: 0;
+      color: #38bdf8;
+    }
+    p {
+      color: #94a3b8;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+    .btn {
       width: 100%;
-      background: #3b82f6;
-      color: white;
-      border: none;
       padding: 14px;
-      margin: 8px 0;
-      border-radius: 8px;
+      border: none;
+      border-radius: 10px;
       font-size: 16px;
       font-weight: bold;
       cursor: pointer;
+      margin-bottom: 12px;
+      transition: all 0.3s ease;
     }
-    .ad-btn.completed { background: #22c55e; cursor: not-allowed; }
-    .unlock-btn {
-      width: 100%;
-      background: #eab308;
-      color: #000;
-      border: none;
-      padding: 16px;
-      margin-top: 15px;
-      border-radius: 8px;
-      font-size: 18px;
-      font-weight: bold;
+    .btn-ad {
+      background-color: #3b82f6;
+      color: white;
+    }
+    .btn-ad:hover {
+      background-color: #2563eb;
+    }
+    .btn-unlock {
+      background-color: #eab308;
+      color: #000000;
       cursor: not-allowed;
       opacity: 0.5;
     }
-    .unlock-btn.active {
-      opacity: 1;
-      cursor: pointer;
-      background: #ef4444;
+    .btn-unlock.active {
+      background-color: #22c55e;
       color: white;
+      cursor: pointer;
+      opacity: 1;
     }
   </style>
 </head>
 <body>
 
-<div class="card">
-  <h2>🔒 Link Locked</h2>
-  <p id="subtext">Complete the step(s) to unlock your movie file.</p>
+  <div class="card">
+    <h2>🔒 Link Locked</h2>
+    <p>Watch ad step(s) below to unlock your movie file.</p>
 
-  <div id="buttonsContainer"></div>
+    <!-- Ad Button -->
+    <button id="adBtn" class="btn btn-ad" onclick="watchAd()">📺 Watch Ad to Unlock</button>
 
-  <button class="unlock-btn" id="unlockBtn" disabled onclick="getMovieFile()">🔒 Get Movie File</button>
-</div>
+    <!-- Unlock Button -->
+    <button id="unlockBtn" class="btn btn-unlock" disabled onclick="sendDataBack()">🔑 Get Movie File</button>
+  </div>
 
-<script>
-  const tg = window.Telegram.WebApp;
-  tg.expand();
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const fileKey = urlParams.get('start');
-  
-  // URL से पता करेगा कि कितने Ads दिखाने हैं (डिफ़ॉल्ट 1)
-  const totalAds = parseInt(urlParams.get('ads')) || 1; 
-
-  const container = document.getElementById('buttonsContainer');
-
-  // Ads के बटन जनरेट करना
-  for (let i = 1; i <= totalAds; i++) {
-    const btn = document.createElement('button');
-    btn.className = 'ad-btn';
-    btn.id = ad${i};
-    btn.innerText = Watch Ad ${i} (${i-1}/${totalAds});
-    if (i > 1) btn.style.display = 'none';
-    btn.onclick = () => watchAd(i);
-    container.appendChild(btn);
-  }
-
-  function watchAd(adNum) {
-    // यहाँ अपना Adsterra / Monetag Direct Link डालें
+    const urlParams = new URLSearchParams(window.location.search);
+    const fileKey = urlParams.get('start') || '';
+    
+    // Ad URL (बाद में Monetag/Adsterra direct link यहाँ बदलें)
     const adUrl = "https://www.google.com"; 
 
-    window.open(adUrl, '_blank');
+    function watchAd() {
+      // Ad window खोलें
+      window.open(adUrl, '_blank');
 
-    setTimeout(() => {
-      const btn = document.getElementById(ad${adNum});
-      btn.classList.add('completed');
-      btn.innerText = ✅ Ad ${adNum} Done;
-      btn.disabled = true;
+      // Ad देखने के बाद बटन Active करें
+      const adBtn = document.getElementById('adBtn');
+      const unlockBtn = document.getElementById('unlockBtn');
 
-      if (adNum < totalAds) {
-        document.getElementById(ad${adNum + 1}).style.display = 'block';
-      } else {
-        const unlockBtn = document.getElementById('unlockBtn');
-        unlockBtn.disabled = false;
-        unlockBtn.classList.add('active');
-        unlockBtn.innerText = '🔓 Get Movie File Now';
-      }
-    }, 2000);
-  }
+      adBtn.innerText = "✅ Ad Completed";
+      adBtn.style.backgroundColor = "#10b981";
+      adBtn.disabled = true;
 
-  function getMovieFile() {
-    if (fileKey) {
-      tg.sendData(fileKey);
-      tg.close();
+      unlockBtn.disabled = false;
+      unlockBtn.classList.add('active');
     }
-  }
-</script>
 
+    function sendDataBack() {
+      if (fileKey) {
+        tg.sendData(fileKey);
+      } else {
+        alert("File key missing!");
+      }
+    }
+  </script>
 </body>
 </html>
