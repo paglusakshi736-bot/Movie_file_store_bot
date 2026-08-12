@@ -1,12 +1,13 @@
 {
-  "name": "movie-file-store-bot",
+  "name": "movie_file_store_bot",
   "version": "1.0.0",
-  "description": "Telegram File Store Bot",
+  "description": "Telegram Movie Store Bot",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "node-telegram-bot-api": "^0.66.0"
+    "node-telegram-bot-api": "^0.66.0",
+    "mongoose": "^8.0.0"
   }
 }
