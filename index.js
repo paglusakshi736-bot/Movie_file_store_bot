@@ -1,14 +1,26 @@
 const TelegramBot = require('node-telegram-bot-api');
+const http = require('http');
 
+// Render Port Issue Fix: Web Server to keep Render active
+const port = process.env.PORT || 3000;
+http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('Bot Server is Running Successfully!');
+}).listen(port, () => {
+  console.log('Server is listening on port ' + port);
+});
+
+// Telegram Bot Logic
 const token = process.env.BOT_TOKEN;
 if (!token) {
-  console.error("Error: BOT_TOKEN missing!");
+  console.error("Error: BOT_TOKEN Environment Variable is missing!");
   process.exit(1);
 }
 
 const bot = new TelegramBot(token, { polling: true });
 const fileStore = {};
 
+// Handle /start with File Key
 bot.onText(/\/start (.+)/, (msg, match) => {
   const chatId = msg.chat.id;
   const fileId = match[1];
@@ -28,10 +40,12 @@ bot.onText(/\/start (.+)/, (msg, match) => {
   }
 });
 
+// Handle simple /start
 bot.onText(/\/start$/, (msg) => {
   bot.sendMessage(msg.chat.id, "Welcome! Use the Mini App to download movies.");
 });
 
+// Store movie files sent by Admin
 bot.on('message', (msg) => {
   const chatId = msg.chat.id;
 
