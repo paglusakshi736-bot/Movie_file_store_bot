@@ -46,7 +46,7 @@ if (bot) {
 
   bot.on('message', async (msg) => {
     // Check if message contains video, document, or photo
-    if (msg.video  msg.document  msg.photo) {
+    if (msg.video || msg.document || msg.photo) {
       try {
         let fileId = "";
         let photoFileId = "";
