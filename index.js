@@ -1,35 +1,107 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const TelegramBot = require('node-telegram-bot-api');
+const axios = require('axios');
 const path = require('path');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-
-// Public folder se static files serve karega
 app.use(express.static(path.join(__dirname, 'public')));
 
 const PORT = process.env.PORT || 10000;
+const BOT_TOKEN = process.env.BOT_TOKEN;
 const MONGO_URI = process.env.DATABASE_URI;
+
+// Initialize Telegram Bot safely
+let bot;
+if (BOT_TOKEN) {
+  bot = new TelegramBot(BOT_TOKEN, { polling: true });
+} else {
+  console.error("CRITICAL ERROR: BOT_TOKEN is missing in Render Environment Variables!");
+}
 
 // MongoDB Connection
 mongoose.connect(MONGO_URI)
   .then(() => console.log('MongoDB Connected Successfully'))
   .catch(err => console.error('MongoDB Connection Error:', err));
 
-// Movie Schema Definition
+// Database Schema
 const movieSchema = new mongoose.Schema({
   title: String,
   file_id: String,
   file_size: String,
   caption: String,
-  poster_url: String,
+  photo_file_id: String,
 });
 
 const Movie = mongoose.model('Movie', movieSchema);
 
-// API 1: Specific Movie ka Data lane ke liye
+// BOT HANDLERS
+if (bot) {
+  bot.onText(/\/start/, (msg) => {
+    bot.sendMessage(msg.chat.id, "👋 पवन भाई आपका बॉट एक्टिव है! कोई भी मूवी, वीडियो या फ़ाइल भेजें, यह सीधे MongoDB में सेव हो जाएगी।");
+  });
+
+  bot.on('message', async (msg) => {
+    // Check if message contains video, document, or photo
+    if (msg.video  msg.document  msg.photo) {
+      try {
+        let fileId = "";
+        let photoFileId = "";
+        let title = msg.caption || "Untitled Movie";
+
+        if (msg.video) {
+          fileId = msg.video.file_id;
+          if (msg.video.thumbnail) photoFileId = msg.video.thumbnail.file_id;
+        } else if (msg.document) {
+          fileId = msg.document.file_id;
+          if (msg.document.thumbnail) photoFileId = msg.document.thumbnail.file_id;
+          if (!msg.caption && msg.document.file_name) title = msg.document.file_name;
+        } else if (msg.photo) {
+          // If user sends photo only
+          fileId = msg.photo[msg.photo.length - 1].file_id;
+          photoFileId = fileId;
+        }
+
+        const newMovie = new Movie({
+          title: title,
+          file_id: fileId,
+          caption: msg.caption || '',
+          photo_file_id: photoFileId
+        });
+
+        await newMovie.save();
+        bot.sendMessage(msg.chat.id, ✅ Database में सेव हो गया!\n\n🎬 Title: ${title});
+      } catch (err) {
+        console.error('Error saving movie:', err);
+        bot.sendMessage(msg.chat.id, '❌ Save करने में एरर आया।');
+      }
+    }
+
+    // Handle Mini App Data Submission
+    if (msg.web_app_data) {
+      try {
+        const data = JSON.parse(msg.web_app_data.data);
+        if (data.action === 'get_file' && data.movieId) {
+          const movie = await Movie.findById(data.movieId);
+          if (movie) {
+            bot.sendDocument(msg.chat.id, movie.file_id, { caption: movie.caption || movie.title });
+          } else {
+            bot.sendMessage(msg.chat.id, '❌ फ़ाइल डेटाबेस में नहीं मिली।');
+          }
+        }
+      } catch (err) {
+        console.error('Error in web_app_data:', err);
+      }
+    }
+  });
+}
+
+// EXPRESS APIs FOR MINI APP
+
+// API 1: Fetch single movie details
 app.get('/api/movie/:id', async (req, res) => {
   try {
     const movie = await Movie.findById(req.params.id);
@@ -40,7 +112,7 @@ app.get('/api/movie/:id', async (req, res) => {
   }
 });
 
-// API 2: View Full Library ke liye Saari Movies lane ki API
+// API 2: Fetch all movies for library
 app.get('/api/movies', async (req, res) => {
   try {
     const movies = await Movie.find({});
@@ -50,11 +122,35 @@ app.get('/api/movies', async (req, res) => {
   }
 });
 
-// FrontEnd route fallback
+// API 3: Poster image proxy (Serves Telegram Thumbnails)
+app.get('/poster/:file_id', async (req, res) => {
+  try {
+    const fileId = req.params.file_id;
+    if (!fileId || fileId === 'undefined') {
+      return res.redirect('https://via.placeholder.com/300x450?text=No+Poster');
+    }
+    const fileRes = await axios.get(https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${fileId});
+    const filePath = fileRes.data.result.file_path;
+    
+    const imageStream = await axios({
+      url: https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath},
+      method: 'GET',
+      responseType: 'stream'
+    });
+
+    res.setHeader('Content-Type', 'image/jpeg');
+    imageStream.data.pipe(res);
+  } catch (err) {
+    console.error('Poster proxy error:', err.message);
+    res.redirect('https://via.placeholder.com/300x450?text=No+Poster');
+  }
+});
+
+// Fallback to Mini App
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(Server is running on port ${PORT});
 });
