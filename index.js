@@ -1,7 +1,6 @@
 const TelegramBot = require('node-telegram-bot-api');
 const http = require('http');
 
-// Render Port Fix
 const port = process.env.PORT || 3000;
 http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/plain' });
@@ -10,7 +9,6 @@ http.createServer((req, res) => {
   console.log('Server is listening on port ' + port);
 });
 
-// Telegram Bot Logic
 const token = process.env.BOT_TOKEN;
 if (!token) {
   console.error("Error: BOT_TOKEN Environment Variable is missing!");
@@ -20,16 +18,12 @@ if (!token) {
 const bot = new TelegramBot(token, { polling: true });
 const fileStore = {};
 
-// Netlify Mini App URL
 const MINI_APP_URL = "https://gleaming-hamster-2e0b5e.netlify.app";
 
-// Start Command with File Key
-bot.onText(/\/start (.+)/, (msg, match) => {
-  const chatId = msg.chat.id;
-  const fileId = match[1];
-
-  if (fileStore[fileId]) {
-    const storedFile = fileStore[fileId];
+// Helper Function to Send Stored File
+function sendStoredFile(chatId, fileKey) {
+  if (fileStore[fileKey]) {
+    const storedFile = fileStore[fileKey];
     const captionText = storedFile.caption ? storedFile.caption : 'Movie File';
     bot.sendMessage(chatId, "🎉 Your Movie File is unlocked!\n\nTitle: " + captionText);
     
@@ -39,37 +33,34 @@ bot.onText(/\/start (.+)/, (msg, match) => {
       bot.sendDocument(chatId, storedFile.id);
     }
   } else {
-    bot.sendMessage(chatId, "File missing or expired.");
+    bot.sendMessage(chatId, "❌ File expired or server restarted. Please re-upload the video.");
   }
+}
+
+// Start Command with Parameter
+bot.onText(/\/start (.+)/, (msg, match) => {
+  const chatId = msg.chat.id;
+  const fileKey = match[1];
+  sendStoredFile(chatId, fileKey);
 });
 
 // Normal /start
 bot.onText(/\/start$/, (msg) => {
-  bot.sendMessage(msg.chat.id, "Welcome Pawan! Send me a video file to generate an Ad-locked link.");
+  bot.sendMessage(msg.chat.id, "Welcome! Send me a video file to generate an Ad-locked link.");
 });
 
-// File Upload & WebApp Data Handling
+// Handling WebApp Data and Video Uploads
 bot.on('message', (msg) => {
   const chatId = msg.chat.id;
 
-  if (msg.text && msg.text.startsWith('/start')) return;
-
-  // Mini App से फाइल अनलॉक डेटा मिलना
-  if (msg.web_app_data) {
+  // Mini App से tg.sendData() के जरिए आया डेटा
+  if (msg.web_app_data && msg.web_app_data.data) {
     const fileKey = msg.web_app_data.data;
-    if (fileStore[fileKey]) {
-      const storedFile = fileStore[fileKey];
-      const captionText = storedFile.caption ? storedFile.caption : 'Movie File';
-      bot.sendMessage(chatId, "🎉 Here is your requested movie file!\n\nTitle: " + captionText);
-      
-      if (storedFile.type === 'video') {
-        bot.sendVideo(chatId, storedFile.id);
-      } else if (storedFile.type === 'document') {
-        bot.sendDocument(chatId, storedFile.id);
-      }
-    }
+    sendStoredFile(chatId, fileKey);
     return;
   }
+
+  if (msg.text && msg.text.startsWith('/start')) return;
 
   let fileId = null;
   let fileType = null;
@@ -90,7 +81,6 @@ bot.on('message', (msg) => {
     const webAppUrl1 = MINI_APP_URL + "/?start=" + uniqueKey + "&ads=1";
     const webAppUrl3 = MINI_APP_URL + "/?start=" + uniqueKey + "&ads=3";
 
-    // Telegram Inline WebApp Buttons
     const options = {
       reply_markup: {
         inline_keyboard: [
